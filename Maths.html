@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Smart Energy Consumption Forecasting System</title>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: "Segoe UI", sans-serif;
+        }
+
+        body {
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background: linear-gradient(135deg,#4facfe,#00f2fe,#43e97b);
+            background-size: cover;
+            background-attachment: fixed;
+            animation: bgMove 12s ease infinite;
+        }
+
+        @keyframes bgMove {
+            0% {
+                background-position: 0% 50%
+            }
+
+            50% {
+                background-position: 100% 50%
+            }
+
+            100% {
+                background-position: 0% 50%
+            }
+        }
+
+        .container {
+
+            background: rgba(255, 255, 255, 0.12);
+            backdrop-filter: blur(12px);
+            border-radius: 18px;
+            padding: 35px;
+            width: 720px;
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.4);
+            color: white;
+            text-align: center;
+            animation: fadeIn 1s ease;
+
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px)
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0)
+            }
+        }
+
+        h2 {
+            margin-bottom: 10px;
+            font-size: 28px;
+        }
+
+        p {
+            opacity: 0.9;
+            margin-bottom: 20px;
+        }
+
+        input {
+
+            width: 95%;
+            padding: 12px;
+            border-radius: 8px;
+            border: none;
+            outline: none;
+            font-size: 15px;
+            margin-bottom: 15px;
+            transition: 0.3s;
+
+        }
+
+        input:focus {
+            box-shadow: 0 0 8px #00e5ff;
+        }
+
+        button {
+
+            padding: 12px 25px;
+            border: none;
+            border-radius: 8px;
+            background: linear-gradient(45deg, #00c6ff, #0072ff);
+            color: white;
+            font-size: 16px;
+            cursor: pointer;
+            transition: 0.3s;
+            margin-top: 10px;
+
+        }
+
+        button:hover {
+
+            transform: scale(1.05);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+
+        }
+
+        .results {
+
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            margin-top: 20px;
+
+        }
+
+        .result {
+
+            background: rgba(255, 255, 255, 0.15);
+            padding: 12px;
+            border-radius: 8px;
+            font-size: 15px;
+            backdrop-filter: blur(8px);
+            transition: 0.3s;
+
+        }
+
+        .result:hover {
+
+            transform: translateY(-3px);
+            background: rgba(255, 255, 255, 0.25);
+
+        }
+
+        .alert {
+            color:red;
+            font-weight: bold;
+        }
+
+        .recommend {
+            color: yellow;
+        }
+
+        .chartBox {
+
+            background: white;
+            border-radius: 12px;
+            padding: 10px;
+            margin-top: 25px;
+
+        }
+    </style>
+
+</head>
+
+<body>
+
+    <div class="container">
+
+        <h2>⚡ Smart Energy Consumption Forecasting System</h2>
+
+        <p>Enter minimum 15 days energy consumption (comma separated)</p>
+
+        <input id="energyData" placeholder="Example: 20,22,23,25,27,28,30,29,31,33,32,34,35,36,38">
+
+        <button onclick="predictEnergy()">Analyze & Predict</button>
+
+        <div class="results">
+
+            <div class="result" id="analysis"></div>
+            <div class="result" id="prediction"></div>
+            <div class="result" id="trend"></div>
+            <div class="result" id="cost"></div>
+            <div class="result alert" id="alert"></div>
+            <div class="result recommend" id="recommend"></div>
+
+        </div>
+
+        <div class="chartBox">
+            <canvas id="energyChart"></canvas>
+        </div>
+
+    </div>
+
+    <script>
+
+        let chart;
+
+        function predictEnergy() {
+
+            let input = document.getElementById("energyData").value;
+            let values = input.split(",").map(Number);
+
+            if (values.length < 15) {
+                alert("Please enter minimum 15 days data");
+                return;
+            }
+
+            let days = [];
+            for (let i = 1; i <= values.length; i++) {
+                days.push(i);
+            }
+
+            /* Basic Analysis */
+
+            let sum = 0;
+            values.forEach(v => sum += v);
+
+            let avg = sum / values.length;
+            let max = Math.max(...values);
+            let min = Math.min(...values);
+
+            /* Linear Regression */
+
+            let meanX = days.reduce((a, b) => a + b) / days.length;
+            let meanY = values.reduce((a, b) => a + b) / values.length;
+
+            let numerator = 0;
+            let denominator = 0;
+
+            for (let i = 0; i < days.length; i++) {
+                numerator += (days[i] - meanX) * (values[i] - meanY);
+                denominator += (days[i] - meanX) * (days[i] - meanX);
+            }
+
+            let m = numerator / denominator;
+            let c = meanY - (m * meanX);
+
+            let nextDay = values.length + 1;
+            let predicted = (m * nextDay) + c;
+
+            /* Trend Detection */
+
+            let trendText = "Stable";
+
+            if (m > 0.5) {
+                trendText = "Increasing Energy Consumption";
+            }
+            else if (m < -0.5) {
+                trendText = "Decreasing Energy Consumption";
+            }
+
+            /* Energy Cost Prediction */
+
+            let costPerUnit = 8;
+            let predictedCost = predicted * costPerUnit;
+
+            /* Alert */
+
+            let alertMsg = "";
+
+            if (predicted > avg * 1.2) {
+                alertMsg = "⚠ Warning: Energy consumption may increase significantly!";
+            }
+            else{
+                alertMsg="Energy consumption is stable and normal(No spike detected)"
+            }
+
+            /* Recommendation */
+
+            let recommendMsg = "";
+
+            if (predicted > avg) {
+                recommendMsg =
+                    "Recommendations:<br>• Turn off unused appliances<br>• Use LED lighting<br>•Use Solar rooftop panel to consume energy <br> Reduce AC usage during peak hours ";
+            }
+            else {
+                recommendMsg =
+                    "Energy usage is within efficient limits. Keep maintaining good energy habits.";
+            }
+
+            /* Display */
+
+            document.getElementById("analysis").innerHTML =
+                "Average: " + avg.toFixed(2) + " kWh | Max: " + max + " kWh | Min: " + min + " kWh";
+
+            document.getElementById("prediction").innerHTML =
+                "Predicted Energy for Day " + nextDay + " : " + predicted.toFixed(2) + " kWh";
+
+            document.getElementById("trend").innerHTML =
+                "Energy Trend: " + trendText;
+
+            document.getElementById("cost").innerHTML =
+                "Estimated Electricity Cost: ₹" + predictedCost.toFixed(2);
+
+            document.getElementById("alert").innerHTML = alertMsg;
+            document.getElementById("recommend").innerHTML = recommendMsg;
+
+            /* Chart */
+
+            let chartDays = [...days, nextDay];
+            let chartValues = [...values, predicted];
+
+            if (chart) {
+                chart.destroy();
+            }
+
+            const ctx = document.getElementById("energyChart");
+
+            chart = new Chart(ctx, {
+                type: "line",
+                data: {
+                    labels: chartDays,
+                    datasets: [
+                        {
+                            label: "Actual Energy Usage",
+                            data: values,
+                            borderColor: "#00e5ff",
+                            borderWidth: 3,
+                            tension: 0.3
+                        },
+                        {
+                            label: "Predicted Energy",
+                            data: chartValues,
+                            borderColor: "#ff4d4d",
+                            borderDash: [6, 6],
+                            borderWidth: 3,
+                            tension: 0.3
+                        }
+                    ]
+                },
+                options: {
+                    plugins: {
+                        legend: {
+                            labels: { color: "black" }
+                        }
+                    }
+                }
+            });
+
+        }
+
+    </script>
+
+</body>
+
+</html>
